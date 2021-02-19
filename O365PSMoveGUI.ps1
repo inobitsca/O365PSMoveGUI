@@ -1,20 +1,19 @@
 ﻿# GUI to Manage Exchange Online PowerShell Based Move Requests .
 #
+##Requires ExchangeOnline PowerShell module. 
+#	Install-Module -Name ExchangeOnlineManagement
 #
-#MUST be run from Exange online PowerShell
-##Requires ACTIVEDIRECTORY PowerShell module. 
-#You will need User Admin rights.
+#
+#You will need Mailbox Admin rights.
 #Created by Cedric Abrahams - cedric@inobits.com
 #
-#Version 1.3 2021-01-05
+#Version 0.6 2021-02-19
+#Bulk options not fully functional 
 
 
 #Connect-EXOPSSession
-Write-Host "Getting Mailbox and Move details.
-This may take some time." -fore green
-#$allUsers = Get-MailUser
-#$moves = Get-moverequest
-#$credential = get-credential
+Import-Module ExchangeOnlineManagement
+
 
 #Variables
 $result = ""
@@ -44,7 +43,7 @@ Function ChooseForm {
 # Create a new form
 $ActionForm                    = New-Object system.Windows.Forms.Form
 # Define the size, title and background color
-$ActionForm.ClientSize         = '300,240'
+$ActionForm.ClientSize         = '500,300'
 $ActionForm.text               = "Mailbox Move Management"
 $ActionForm.BackColor          = "#ffffff"
 
@@ -54,17 +53,17 @@ $TitleOperationChoice.text                      = "Mailbox Move Management"
 $TitleOperationChoice.AutoSize                  = $true
 $TitleOperationChoice.width                     = 25
 $TitleOperationChoice.height                    = 10
-$TitleOperationChoice.location                  = New-Object System.Drawing.Point(20,20)
+$TitleOperationChoice.location                  = New-Object System.Drawing.Point(20,0)
 $TitleOperationChoice.Font                      = 'Microsoft Sans Serif,13'
 
 
 #Buttons
 $SingleUserBtn                   = New-Object system.Windows.Forms.Button
-$SingleUserBtn.BackColor         = "#a4ba67"
+$SingleUserBtn.BackColor         = "#026075"
 $SingleUserBtn.text              = "Individual User Operations"
 $SingleUserBtn.width             = 200
 $SingleUserBtn.height            = 30
-$SingleUserBtn.location          = New-Object System.Drawing.Point(20,80)
+$SingleUserBtn.location          = New-Object System.Drawing.Point(20,70)
 $SingleUserBtn.Font              = 'Microsoft Sans Serif,10'
 $SingleUserBtn.ForeColor         = "#ffffff"
 $ActionForm.CancelButton   = $cancelBtn
@@ -73,11 +72,11 @@ $SingleUserBtn.Add_Click({FindUserForm})
 
 #Buttons
 $BulkUserBtn                   = New-Object system.Windows.Forms.Button
-$BulkUserBtn.BackColor         = "#a4ba67"
-$BulkUserBtn.text              = "Bulk User Operations"
+$BulkUserBtn.BackColor         = "#026075"
+$BulkUserBtn.text              = "Bulk Operations*"
 $BulkUserBtn.width             = 200
 $BulkUserBtn.height            = 30
-$BulkUserBtn.location          = New-Object System.Drawing.Point(20,110)
+$BulkUserBtn.location          = New-Object System.Drawing.Point(240,70)
 $BulkUserBtn.Font              = 'Microsoft Sans Serif,10'
 $BulkUserBtn.ForeColor         = "#ffffff"
 $ActionForm.CancelButton   = $cancelBtn
@@ -85,17 +84,72 @@ $ActionForm.Controls.Add($BulkUserBtn)
 $BulkUserBtn.Add_Click({BulkActionForm})
 
 #Buttons
+$ConnectEXoPSBtn                   = New-Object system.Windows.Forms.Button
+$ConnectEXoPSBtn.BackColor         = "#026075"
+$ConnectEXoPSBtn.text              = "Connect to Exchange Online"
+$ConnectEXoPSBtn.width             = 200
+$ConnectEXoPSBtn.height            = 30
+$ConnectEXoPSBtn.location          = New-Object System.Drawing.Point(20,30)
+$ConnectEXoPSBtn.Font              = 'Microsoft Sans Serif,10'
+$ConnectEXoPSBtn.ForeColor         = "#ffffff"
+$ActionForm.CancelButton   = $cancelBtn
+$ActionForm.Controls.Add($ConnectEXoPSBtn)
+$ConnectEXoPSBtn.Add_Click({Connect-ExchangeOnline})
+
+#Buttons
+$ExchOnPremCredBtn                   = New-Object system.Windows.Forms.Button
+$ExchOnPremCredBtn.BackColor         = "#026075"
+$ExchOnPremCredBtn.text              = "Exchange OnPrem Credential"
+$ExchOnPremCredBtn.width             = 200
+$ExchOnPremCredBtn.height            = 30
+$ExchOnPremCredBtn.location          = New-Object System.Drawing.Point(240,30)
+$ExchOnPremCredBtn.Font              = 'Microsoft Sans Serif,10'
+$ExchOnPremCredBtn.ForeColor         = "#ffffff"
+$ActionForm.CancelButton   = $cancelBtn
+$ActionForm.Controls.Add($ExchOnPremCredBtn)
+$ExchOnPremCredBtn.Add_Click({$credential = get-credential})
+
+#Buttons
+$ImportDataBtn                   = New-Object system.Windows.Forms.Button
+$ImportDataBtn.BackColor         = "#026075"
+$ImportDataBtn.text              = "Import O365 Data"
+$ImportDataBtn.width             = 200
+$ImportDataBtn.height            = 30
+$ImportDataBtn.location          = New-Object System.Drawing.Point(20,110)
+$ImportDataBtn.Font              = 'Microsoft Sans Serif,10'
+$ImportDataBtn.ForeColor         = "#ffffff"
+$ActionForm.CancelButton   = $cancelBtn
+$ActionForm.Controls.Add($ImportDataBtn)
+$ImportDataBtn.Add_Click({Write-Host "Getting Mailbox and Move details.
+This may take some time." -fore green
+$allUsers = Get-MailUser
+$moves = Get-moverequest})
+
+
+
+$NoteText                           = New-Object system.Windows.Forms.Label
+$NoteText.text                      = '* Bulk functions under development'
+$NoteText.AutoSize                  = $true
+$NoteText.width                     = 25
+$NoteText.height                    = 10
+$NoteText.ForeColor					= "#32a852"
+$NoteText.location                  = New-Object System.Drawing.Point(20,150)
+$NoteText.Font                      = 'Microsoft Sans Serif,13'
+$ActionForm.controls.AddRange(@($NoteText))
+
+#Buttons
 $CheckMovesBtn                  = New-Object system.Windows.Forms.Button
 $CheckMovesBtn.BackColor         = "#32a852"
 $CheckMovesBtn.text              = "Check Existing Moves"
 $CheckMovesBtn.width             = 200
 $CheckMovesBtn.height            = 30
-$CheckMovesBtn.location          = New-Object System.Drawing.Point(20,150)
+$CheckMovesBtn.location          = New-Object System.Drawing.Point(20,180)
 $CheckMovesBtn.Font              = 'Microsoft Sans Serif,10'
 $CheckMovesBtn.ForeColor         = "#ffffff"
 $ActionForm.CancelButton   = $cancelBtn
 $ActionForm.Controls.Add($CheckMovesBtn)
 $CheckMovesBtn.Add_Click({$Moves|Select displayname,Status|Out-GridView -PassThru})
+
 
 #Cancel Button
 $cancelBtn                       = New-Object system.Windows.Forms.Button
@@ -103,7 +157,7 @@ $cancelBtn.BackColor             = "#ffffff"
 $cancelBtn.text                  = "Cancel"
 $cancelBtn.width                 = 90
 $cancelBtn.height                = 30
-$cancelBtn.location              = New-Object System.Drawing.Point(20,190)
+$cancelBtn.location              = New-Object System.Drawing.Point(20,260)
 $cancelBtn.Font                  = 'Microsoft Sans Serif,10'
 $cancelBtn.ForeColor             = "#000fff"
 $cancelBtn.DialogResult          = [System.Windows.Forms.DialogResult]::Cancel
@@ -146,7 +200,7 @@ Write-host "NewMoveForm" $NewMove.text
 
 #Execute Button
 $ExecBtn                   = New-Object system.Windows.Forms.Button
-$ExecBtn.BackColor         = "#a4ba67"
+$ExecBtn.BackColor         = "#026075"
 $ExecBtn.text              = "Start Move - Auto complete"
 $ExecBtn.width             = 220
 $ExecBtn.height            = 30
@@ -160,7 +214,7 @@ $ExecBtn.Add_Click({New-MoveRequest -identity $ID.name -Remote -RemoteHostName a
 
 #Execute Button
 $ExecBtn1                   = New-Object system.Windows.Forms.Button
-$ExecBtn1.BackColor         = "#a4ba67"
+$ExecBtn1.BackColor         = "#026075"
 $ExecBtn1.text              = "Start Move - Manual complete"
 $ExecBtn1.width             = 220
 $ExecBtn1.height            = 30
@@ -198,7 +252,7 @@ function NewBulkMoveForm  {
 Add-Type -AssemblyName System.Windows.Forms
 # Result form
 $NewBulkMoveForm                    = New-Object system.Windows.Forms.Form
-$NewBulkMoveForm.ClientSize         = '500,200'
+$NewBulkMoveForm.ClientSize         = '500,300'
 $NewBulkMoveForm.text               = "New Move Request"
 $NewBulkMoveForm.BackColor          = "#bababa"
 
@@ -207,25 +261,51 @@ if ($Valid -eq 1)  { [void]$ResultForm2.Close() }
 ########### Result Form cont.
 #Account Name Heading
 $NewPrimaryText                           = New-Object system.Windows.Forms.Label
-$NewPrimaryText.text                      = 'You have chosen to move mailbox ' + $ID.name
+$NewPrimaryText.text                      = 'You have chosen to do a bulk mailbox move.' + $ID.name
 $NewPrimaryText.AutoSize                  = $true
 $NewPrimaryText.width                     = 25
 $NewPrimaryText.height                    = 10
 $NewPrimaryText.location                  = New-Object System.Drawing.Point(20,10)
+#$NewPrimaryText.ForeColor         = "#bababa"
 $NewPrimaryText.Font                      = 'Microsoft Sans Serif,13,style=Bold'
 $NewBulkMoveForm.controls.AddRange(@($NewPrimaryText))
+
+$NewSecondaryText                           = New-Object system.Windows.Forms.Label
+$NewSecondaryText.text                      = 'File must be in CSV format with a DisplayName Column.' + $ID.name
+$NewSecondaryText.AutoSize                  = $true
+$NewSecondaryText.width                     = 25
+$NewSecondaryText.height                    = 10
+$NewSecondaryText.location                  = New-Object System.Drawing.Point(20,40)
+$NewSecondaryText.ForeColor		            = "#dd00ff"
+$NewSecondaryText.Font                      = 'Microsoft Sans Serif,13,style=Bold'
+$NewBulkMoveForm.controls.AddRange(@($NewSecondaryText))
 
 # 
 
 Write-host "NewBulkMoveForm" $NewBulkMove.text
 
+#Import Button
+$ImportBtn                   = New-Object system.Windows.Forms.Button
+$ImportBtn.BackColor         = "#0000ff"
+$ImportBtn.text              = "Import Mailbox List"
+$ImportBtn.width             = 220
+$ImportBtn.height            = 30
+$ImportBtn.location          = New-Object System.Drawing.Point(20,80)
+$ImportBtn.Font              = 'Microsoft Sans Serif,10'
+$ImportBtn.ForeColor         = "#ffffff"
+$NewBulkMoveForm.CancelButton   = $cancelBtn3
+$NewBulkMoveForm.Controls.Add($ImportBtn)
+
+
+$ImportBtn.Add_Click({BulkUserImport})
+
 #Execute Button
 $ExecBtn                   = New-Object system.Windows.Forms.Button
-$ExecBtn.BackColor         = "#a4ba67"
+$ExecBtn.BackColor         = "#026075"
 $ExecBtn.text              = "Start Move - Auto complete"
 $ExecBtn.width             = 220
 $ExecBtn.height            = 30
-$ExecBtn.location          = New-Object System.Drawing.Point(20,60)
+$ExecBtn.location          = New-Object System.Drawing.Point(20,140)
 $ExecBtn.Font              = 'Microsoft Sans Serif,10'
 $ExecBtn.ForeColor         = "#ffffff"
 $NewBulkMoveForm.CancelButton   = $cancelBtn3
@@ -235,11 +315,11 @@ $ExecBtn.Add_Click({New-MoveRequest -identity $ID.name -Remote -RemoteHostName a
 
 #Execute Button
 $ExecBtn1                   = New-Object system.Windows.Forms.Button
-$ExecBtn1.BackColor         = "#a4ba67"
+$ExecBtn1.BackColor         = "#026075"
 $ExecBtn1.text              = "Start Move - Manual complete"
 $ExecBtn1.width             = 220
 $ExecBtn1.height            = 30
-$ExecBtn1.location          = New-Object System.Drawing.Point(20,100)
+$ExecBtn1.location          = New-Object System.Drawing.Point(20,180)
 $ExecBtn1.Font              = 'Microsoft Sans Serif,10'
 $ExecBtn1.ForeColor         = "#ffffff"
 $NewBulkMoveForm.CancelButton   = $cancelBtn3
@@ -253,7 +333,7 @@ $cancelBtn3.BackColor             = "#ffffff"
 $cancelBtn3.text                  = "Cancel"
 $cancelBtn3.width                 = 90
 $cancelBtn3.height                = 30
-$cancelBtn3.location              = New-Object System.Drawing.Point(20,170)
+$cancelBtn3.location              = New-Object System.Drawing.Point(20,250)
 $cancelBtn3.Font                  = 'Microsoft Sans Serif,10'
 $cancelBtn3.ForeColor             = "#000fff"
 $cancelBtn3.DialogResult          = [System.Windows.Forms.DialogResult]::Cancel
@@ -267,7 +347,6 @@ Write-host "NewBulkMoveForm open Resultsform"
 # Display the form
 $result = $NewBulkMoveForm.ShowDialog()
 }
-
 
 function FinaliseMoveForm {
 Write-Host "FinaliseMoveForm" -fore yellow
@@ -306,7 +385,7 @@ $CompleteMoveForm.controls.AddRange(@($FinaliseMoveText2))
 
 #Result Buttons
 $ExecBtn                   = New-Object system.Windows.Forms.Button
-$ExecBtn.BackColor         = "#a4ba67"
+$ExecBtn.BackColor         = "#026075"
 $ExecBtn.text              = "Complete Move"
 $ExecBtn.width             = 120
 $ExecBtn.height            = 30
@@ -521,12 +600,12 @@ $ActionForm.Controls.Add($NameLable)
 
 #Buttons
 $ExecuteBtn                   = New-Object system.Windows.Forms.Button
-$ExecuteBtn.BackColor         = "#a4ba67"
+$ExecuteBtn.BackColor         = "#026075"
 $ExecuteBtn.text              = "Execute"
 $ExecuteBtn.width             = 90
 $ExecuteBtn.height            = 30
 $ExecuteBtn.location          = New-Object System.Drawing.Point(150,250)
-$ExecuteBtn.Font              = 'Microsoft Sans Serif,10'
+$ExecuteBtn.Font              = 'Microsoft Sans Serif,10,style=bold'
 $ExecuteBtn.ForeColor         = "#ffffff"
 $ActionForm.CancelButton   = $cancelBtn
 $ActionForm.Controls.Add($ExecuteBtn)
@@ -608,9 +687,9 @@ $OperationChoice.ForeColor           = "#016113"
 $OperationChoice.Add_KeyDown({
     if ($_.KeyCode -eq "Enter") 
     {    
-if ($OperationChoice.text -eq $NewBulkMoveForm) {NewMoveForm}
-if ($OperationChoice.text -eq $CompleteBulkMoveForm) {FinaliseMoveForm}
-if ($OperationChoice.text -eq $ViewBulkMoveForm) {MoveConfirmForm}
+if ($OperationChoice.text -eq $NewBulkMoveForm) {NewBulkMoveForm}
+if ($OperationChoice.text -eq $CompleteBulkMoveForm) {FinaliseBulkMoveForm}
+if ($OperationChoice.text -eq $ViewBulkMoveForm) {BulkMoveConfirmForm}
 if ($OperationChoice.text -eq $RemoveBulkMoveForm) {RemoveBulkMoveForm}
 #if ($OperationChoice.text -eq $sub5) {Sub5}
     }
@@ -633,12 +712,12 @@ $BulkActionForm.Controls.Add($BulkNameLable)
 
 #Buttons
 $ExecuteBtn                   = New-Object system.Windows.Forms.Button
-$ExecuteBtn.BackColor         = "#a4ba67"
+$ExecuteBtn.BackColor         = "#026075"
 $ExecuteBtn.text              = "Execute"
 $ExecuteBtn.width             = 90
 $ExecuteBtn.height            = 30
 $ExecuteBtn.location          = New-Object System.Drawing.Point(150,250)
-$ExecuteBtn.Font              = 'Microsoft Sans Serif,10'
+$ExecuteBtn.Font              = 'Microsoft Sans Serif,10,style=bold'
 $ExecuteBtn.ForeColor         = "#ffffff"
 $BulkActionForm.CancelButton   = $cancelBtn
 $BulkActionForm.Controls.Add($ExecuteBtn)
@@ -675,8 +754,8 @@ $result = $BulkActionForm.ShowDialog()
 
 }
 
-<# Function InvalidUserForm {
-	Write-host "nvalidUserForm" -fore Yellow
+Function InvalidUserForm {
+	Write-host "InvalidUserForm" -fore Yellow
 # Ivalid User Form
 $InvalidUserForm                    = New-Object system.Windows.Forms.Form
 $InvalidUserForm.ClientSize         = '400,100'
@@ -685,7 +764,7 @@ $InvalidUserForm.BackColor          = "#bababa"
 
 #Account Name Heading
 $InvalidUserText                           = New-Object system.Windows.Forms.Label
-$InvalidUserText.text                      = 'User $ID.Name is has been migrated'
+$InvalidUserText.text                      = 'No User has been selected'
 $InvalidUserText.AutoSize                  = $true
 $InvalidUserText.width                     = 25
 $InvalidUserText.height                    = 10
@@ -694,7 +773,6 @@ $InvalidUserText.location                  = New-Object System.Drawing.Point(20,
 $InvalidUserText.Font                      = 'Microsoft Sans Serif,13'
 $InvalidUserForm.controls.AddRange(@($InvalidUserText))
 
-Write-host" $ID.Name ID.Name $CN CN"
 $InvalidUserForm.ShowDialog()
 
 }
@@ -800,7 +878,7 @@ $StartForm.Controls.Add($SearchName)
 
 #Buttons
 $FinduserBtn                   = New-Object system.Windows.Forms.Button
-$FinduserBtn.BackColor         = "#a4ba67"
+$FinduserBtn.BackColor         = "#026075"
 $FinduserBtn.text              = "Find User"
 $FinduserBtn.width             = 90
 $FinduserBtn.height            = 30
@@ -837,7 +915,7 @@ function FindUserForm {
   #$ID=get-adobject -filter 'cn -like $searchstring' |Out-GridView -PassThru
   $ID=$allusers  |Out-GridView -PassThru
   $CN = $ID.Name
-
+Write-host "ID is $ID"
   #Get user data
 Write-host "User selected: " $CN
 If ($CN -eq $true){actionform}
@@ -969,7 +1047,7 @@ $RemoveMoveForm.controls.AddRange(@($RemoveMoveText2))
 
 #Result Buttons
 $ExecBtn                   = New-Object system.Windows.Forms.Button
-$ExecBtn.BackColor         = "#a4ba67"
+$ExecBtn.BackColor         = "#026075"
 $ExecBtn.text              = "Remove Move Request"
 $ExecBtn.width             = 120
 $ExecBtn.height            = 30
@@ -1044,7 +1122,7 @@ $RemoveAllCompleteForm.controls.AddRange(@($RemoveAllMoveText2))
 
 #Result Buttons
 $ExecBtn                   = New-Object system.Windows.Forms.Button
-$ExecBtn.BackColor         = "#a4ba67"
+$ExecBtn.BackColor         = "#026075"
 $ExecBtn.text              = "Remove Move Request"
 $ExecBtn.width             = 120
 $ExecBtn.height            = 30
@@ -1084,11 +1162,14 @@ $cancelBtn4.Add_Click({ $RemoveAllCompleteForm.close() })
 $result = $RemoveAllCompleteForm.ShowDialog()
 	}
 
-Function BulkUserForm {
+Function BulkUserImport {
+	
+	
 $FileBrowser = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
     InitialDirectory = [Environment]::GetFolderPath('MyDocuments') }
 $null = $FileBrowser.ShowDialog()	
 $List = Import-csv $FileBrowser.FileName	
+
 }
 
 ############Form Functions End
