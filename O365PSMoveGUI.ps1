@@ -11,17 +11,28 @@
 #Bulk options not fully functional 
 
 
-#Connect-EXOPSSession
+#Check for administrative rights
+If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
+    [Security.Principal.WindowsBuiltInRole] "Administrator"))
+{
+    Write-Warning "You do not have Administrator rights to run this script!`nPlease re-run this script in a PowerShell Session as Administrator!"
+    Break
+}
+
+
+Write-host "Checking if Exchange Online Management PS Module is installed" -Fore Cyan
+$PSM = Get-InstalledModule -Name ExchangeOnlineManagement
+If ($PSM) {Write-host "Exchange Online Management PS Module is installed" -Fore Green}
+If (!$PSM) {Write-host "Exchange Online Management PS Module is not installed" -Fore Yellow
+Sleep -s 2
+Install-Module -Name ExchangeOnlineManagement}
+Write-host "Import Exchange Online Management PS Module"
 Import-Module ExchangeOnlineManagement
+Write-host "Connecting to Exchange Online - Please enter your credentials" - Fore Cyan
+Connect-ExchangeOnline
 
 
 #Variables
-$result = ""
-$res = $false
-$IT = 0
-$user = 'None'
-$NP =''
-$NewEmail =''
 $check = $null
 
 #Menu Options
@@ -34,6 +45,22 @@ $NewBulkMoveForm = "New Bulk Move Request"
 $CompleteBulkMoveForm = "Finalise Bulk Move Requests"
 $ViewBulkMoveForm = "View Bulk Moves Status"
 $RemoveBulkMoveForm = "Remove Bulk Move Requests"
+
+
+####Data Import####
+$Time= Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+Write-Host "Un-migrated mailbox data import started $Time.
+This may take some time." -fore green
+$allUsers = Get-MailUser
+$Time= Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+Write-host "Mailbox Move data import started $Time"
+$AM = $allusers | measure
+Write-host " Unmigrated Mailbox count:" $AM.count
+$moves = Get-moverequest
+$Time= Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+Write-Host "Import complete at $time" -fore Cyan
+$MM = $moves | measure
+Write-host "Current move request count:" $MM.count
 
 ############Form Functions Start
 
@@ -57,31 +84,7 @@ $TitleOperationChoice.location                  = New-Object System.Drawing.Poin
 $TitleOperationChoice.Font                      = 'Microsoft Sans Serif,13'
 
 
-#Buttons
-$SingleUserBtn                   = New-Object system.Windows.Forms.Button
-$SingleUserBtn.BackColor         = "#026075"
-$SingleUserBtn.text              = "Individual User Operations"
-$SingleUserBtn.width             = 200
-$SingleUserBtn.height            = 30
-$SingleUserBtn.location          = New-Object System.Drawing.Point(20,70)
-$SingleUserBtn.Font              = 'Microsoft Sans Serif,10'
-$SingleUserBtn.ForeColor         = "#ffffff"
-$ActionForm.CancelButton   = $cancelBtn
-$ActionForm.Controls.Add($SingleUserBtn)
-$SingleUserBtn.Add_Click({FindUserForm})
 
-#Buttons
-$BulkUserBtn                   = New-Object system.Windows.Forms.Button
-$BulkUserBtn.BackColor         = "#026075"
-$BulkUserBtn.text              = "Bulk Operations*"
-$BulkUserBtn.width             = 200
-$BulkUserBtn.height            = 30
-$BulkUserBtn.location          = New-Object System.Drawing.Point(240,70)
-$BulkUserBtn.Font              = 'Microsoft Sans Serif,10'
-$BulkUserBtn.ForeColor         = "#ffffff"
-$ActionForm.CancelButton   = $cancelBtn
-$ActionForm.Controls.Add($BulkUserBtn)
-$BulkUserBtn.Add_Click({BulkActionForm})
 
 #Buttons
 $ConnectEXoPSBtn                   = New-Object system.Windows.Forms.Button
@@ -110,21 +113,30 @@ $ActionForm.Controls.Add($ExchOnPremCredBtn)
 $ExchOnPremCredBtn.Add_Click({$credential = get-credential})
 
 #Buttons
-$ImportDataBtn                   = New-Object system.Windows.Forms.Button
-$ImportDataBtn.BackColor         = "#026075"
-$ImportDataBtn.text              = "Import O365 Data"
-$ImportDataBtn.width             = 200
-$ImportDataBtn.height            = 30
-$ImportDataBtn.location          = New-Object System.Drawing.Point(20,110)
-$ImportDataBtn.Font              = 'Microsoft Sans Serif,10'
-$ImportDataBtn.ForeColor         = "#ffffff"
+$SingleUserBtn                   = New-Object system.Windows.Forms.Button
+$SingleUserBtn.BackColor         = "#32a852"
+$SingleUserBtn.text              = "Individual User Operations"
+$SingleUserBtn.width             = 200
+$SingleUserBtn.height            = 30
+$SingleUserBtn.location          = New-Object System.Drawing.Point(20,70)
+$SingleUserBtn.Font              = 'Microsoft Sans Serif,10'
+$SingleUserBtn.ForeColor         = "#ffffff"
 $ActionForm.CancelButton   = $cancelBtn
-$ActionForm.Controls.Add($ImportDataBtn)
-$ImportDataBtn.Add_Click({Write-Host "Getting Mailbox and Move details.
-This may take some time." -fore green
-$allUsers = Get-MailUser
-$moves = Get-moverequest})
+$ActionForm.Controls.Add($SingleUserBtn)
+$SingleUserBtn.Add_Click({FindUserForm})
 
+#Buttons
+$BulkUserBtn                   = New-Object system.Windows.Forms.Button
+$BulkUserBtn.BackColor         = "#32a852"
+$BulkUserBtn.text              = "Bulk Operations*"
+$BulkUserBtn.width             = 200
+$BulkUserBtn.height            = 30
+$BulkUserBtn.location          = New-Object System.Drawing.Point(240,70)
+$BulkUserBtn.Font              = 'Microsoft Sans Serif,10'
+$BulkUserBtn.ForeColor         = "#ffffff"
+$ActionForm.CancelButton   = $cancelBtn
+$ActionForm.Controls.Add($BulkUserBtn)
+$BulkUserBtn.Add_Click({BulkActionForm})
 
 
 $NoteText                           = New-Object system.Windows.Forms.Label
@@ -640,7 +652,7 @@ $ActionForm.controls.AddRange(@($TitleOperationChoice,$Description,$Status))
 $result = $ActionForm.ShowDialog()
 }
 
-Function BulkActionForm {
+Function BulkActionForm { #Incomplete
 Write-host "BulkActionForm" -fore Yellow
 Add-Type -AssemblyName System.Windows.Forms
 # Create a new form
@@ -776,7 +788,6 @@ $InvalidUserForm.controls.AddRange(@($InvalidUserText))
 $InvalidUserForm.ShowDialog()
 
 }
-#>
  
 Function NoMoveForm {
 write-host "NoMoveForm" -fore Yellow
@@ -812,102 +823,6 @@ $NoMoveForm.Controls.Add($cancelBtn)
 $NoMoveForm.ShowDialog()
 
 }
-
-<#Function StartForm {
-Write-host "StartForm" -fore yellow
-Add-Type -AssemblyName System.Windows.Forms
-# Create a new form
-$StartForm                    = New-Object system.Windows.Forms.Form
-# Define the size, title and background color
-$StartForm.ClientSize         = '300,200'
-$StartForm.text               = "Mailbox Move Management"
-$StartForm.BackColor          = "#cceeff"
-
-# Create a Title for our form. We will use a label for it.
-$TitleOperationChoice                           = New-Object system.Windows.Forms.Label
-$TitleOperationChoice.text                      = "Mailbox Move Management"
-$TitleOperationChoice.AutoSize                  = $true
-$TitleOperationChoice.width                     = 25
-$TitleOperationChoice.height                    = 10
-$TitleOperationChoice.location                  = New-Object System.Drawing.Point(20,20)
-$TitleOperationChoice.Font                      = 'Microsoft Sans Serif,13'
-
-# Other elemtents
-$Description                     = New-Object system.Windows.Forms.Label
-$Description.text                = "Select a user."
-$Description.AutoSize            = $false
-$Description.width               = 450
-$Description.height              = 35
-$Description.location            = New-Object System.Drawing.Point(20,50)
-$Description.Font                = 'Microsoft Sans Serif,10'
-<# $Status                   = New-Object system.Windows.Forms.Label
-$Status.text              = "Please enter the username below"
-$Status.AutoSize          = $true
-$Status.location          = New-Object System.Drawing.Point(20,170)
-$Status.Font              = 'Microsoft Sans Serif,10' 
-
-
-TextBoxLable
-$SearchNameLabel                = New-Object system.Windows.Forms.Label
-$SearchNameLabel.text           = "Search for name: "
-$SearchNameLabel.AutoSize       = $true
-$SearchNameLabel.width          = 25
-$SearchNameLabel.height         = 20
-$SearchNameLabel.location       = New-Object System.Drawing.Point(20,200)
-$SearchNameLabel.Font           = 'Microsoft Sans Serif,10,style=Bold'
-$SearchNameLabel.Visible        = $True
-$StartForm.Controls.Add($SearchNameLabel) 
-
-TextBox
-$SearchName                     = New-Object system.Windows.Forms.TextBox
-$SearchName.multiline           = $false
-$SearchName.width               = 314
-$SearchName.height              = 20
-$SearchName.location            = New-Object System.Drawing.Point(150,200)
-$SearchName.Font                = 'Microsoft Sans Serif,10'
-$SearchName.Visible             = $True
-$SearchName.Add_KeyDown({ 
-    if ($_.KeyCode -eq "Enter") 
-    {    
-    FinduserForm
-    }
-
-
-$StartForm.Controls.Add($SearchName)
-
-
-#Buttons
-$FinduserBtn                   = New-Object system.Windows.Forms.Button
-$FinduserBtn.BackColor         = "#026075"
-$FinduserBtn.text              = "Find User"
-$FinduserBtn.width             = 90
-$FinduserBtn.height            = 30
-$FinduserBtn.location          = New-Object System.Drawing.Point(75,100)
-$FinduserBtn.Font              = 'Microsoft Sans Serif,10'
-$FinduserBtn.ForeColor         = "#ffffff"
-$StartForm.CancelButton   = $cancelBtn
-$StartForm.Controls.Add($FinduserBtn)
-
-$FinduserBtn.Add_Click({ FinduserForm })
-
-#Cancel Button
-$cancelBtn                       = New-Object system.Windows.Forms.Button
-$cancelBtn.BackColor             = "#ffffff"
-$cancelBtn.text                  = "Cancel"
-$cancelBtn.width                 = 90
-$cancelBtn.height                = 30
-$cancelBtn.location              = New-Object System.Drawing.Point(75,200)
-$cancelBtn.Font                  = 'Microsoft Sans Serif,10'
-$cancelBtn.ForeColor             = "#000fff"
-$cancelBtn.DialogResult          = [System.Windows.Forms.DialogResult]::Cancel
-$StartForm.CancelButton   = $cancelBtn
-$StartForm.Controls.Add($cancelBtn)
-
-$StartForm.controls.AddRange(@($TitleOperationChoice,$Description,$Status))
-# Display the form
-$result = $StartForm.ShowDialog()
-}
-#>
 
 function FindUserForm { 
   Write-host "FindUserForm" -fore Yellow
@@ -1162,7 +1077,7 @@ $cancelBtn4.Add_Click({ $RemoveAllCompleteForm.close() })
 $result = $RemoveAllCompleteForm.ShowDialog()
 	}
 
-Function BulkUserImport {
+Function BulkUserImport { #Incomplete
 	
 	
 $FileBrowser = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
