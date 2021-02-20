@@ -26,12 +26,17 @@ If ($PSM) {Write-host "Exchange Online Management PS Module is installed" -Fore 
 If (!$PSM) {Write-host "Exchange Online Management PS Module is not installed" -Fore Yellow
 Sleep -s 2
 Install-Module -Name ExchangeOnlineManagement}
+
 Write-host "Import Exchange Online Management PS Module"
 Import-Module ExchangeOnlineManagement
-Write-host "Connecting to Exchange Online - Please enter your credentials" - Fore Cyan
-Connect-ExchangeOnline
 
-
+$CheckCon = Get-EmailAddressPolicy -erroraction silentlycontinue
+if (!$CheckCon) {Write-host "Connecting to Exchange Online - Please enter your credentials" - Fore Cyan
+Sleep -s 2
+Connect-ExchangeOnline}
+if ($CheckCon) {Write-Host "Already connected to" $CheckCon.EnabledPrimarySMTPAddressTemplate  -fore Green}
+$CheckCon = Get-EXOCasMailbox
+Write-host "Connected to" $CheckCon.EnabledPrimarySMTPAddressTemplate -fore Green
 #Variables
 $check = $null
 
@@ -435,99 +440,6 @@ $cancelBtn4.Add_Click({ $CompleteMoveForm.close() })
 $result = $CompleteMoveForm.ShowDialog()
 }
 
-<# Function ResultsForm {
-Write-host "Resultsform" -fore Yellow
-if ($user -ne "None") {Write-host "Check Address" $NewEmail -ForegroundColor Green
-$res = $true
-
-$user = get-adobject $CN -Properties mail,proxyaddresses
-
-
-# Process form
-$ResultsForm                    = New-Object system.Windows.Forms.Form
-$ResultsForm.ClientSize         = '500,600'
-$ResultsForm.text               = "Email Process Management"
-$ResultsForm.BackColor          = "#abdbff"
-
-
-#Create a Title for our form. We will use a label for it.
-$EmailTitle                           = New-Object system.Windows.Forms.Label
-$EmailTitle.text                      = 'Email Addresses for ' + $user.name + " (" +$SearchName.Text +  ')'
-$EmailTitle.AutoSize                  = $true
-$EmailTitle.location                  = New-Object System.Drawing.Point(20,25)
-$EmailTitle.Font                      = 'Microsoft Sans Serif,13,style=bold'
-$EmailTitle.ForeColor                 = "#151051"
-$ResultsForm.controls.AddRange(@($EmailTitle))
-
-
-$EmailTitle                           = New-Object system.Windows.Forms.Label
-$EmailTitle.text                      = 'Primary Email Address:'
-$EmailTitle.AutoSize                  = $true
-$EmailTitle.width                     = 25
-$EmailTitle.height                    = 10
-$EmailTitle.location                  = New-Object System.Drawing.Point(20,75)
-$EmailTitle.Font                      = 'Microsoft Sans Serif,13'
-$ResultsForm.controls.AddRange(@($EmailTitle))
-
-
-# Show Email Address
-$EmailChoice                          = New-Object system.Windows.Forms.Label
-$EmailChoice.text                      = $user.mail
-$EmailChoice.AutoSize                  = $true
-$EmailChoice.width                     = 25
-$EmailChoice.height                    = 10
-$EmailChoice.location                  = New-Object System.Drawing.Point(20,100)
-$EmailChoice.Font                      = 'Microsoft Sans Serif,13,style=Bold'
-$ResultsForm.controls.AddRange(@($EmailChoice))
-
-# Show Proxy Addresses Heading.
-$EmailTitle                           = New-Object system.Windows.Forms.Label
-$EmailTitle.text                      = 'Alias Addresses:'
-$EmailTitle.AutoSize                  = $true
-$EmailTitle.width                     = 25
-$EmailTitle.height                    = 10
-$EmailTitle.location                  = New-Object System.Drawing.Point(20,150)
-$EmailTitle.Font                      = 'Microsoft Sans Serif,13'
-$ResultsForm.controls.AddRange(@($EmailTitle))
-
-$VL = 175
-Foreach ($P in $user.proxyaddresses) {
-If ($P -clike "*smtp*") {$Pr = $P 
-$PR =$PR -replace 'smtp:',''
-# Show Proxy Addresses
-$EmailChoice                          = New-Object system.Windows.Forms.Label
-
-$EmailChoice.text                      = $PR
-$EmailChoice.AutoSize                  = $true
-$EmailChoice.width                     = 25
-$EmailChoice.height                    = 10
-$EmailChoice.location                  = New-Object System.Drawing.Point(20,$VL)
-$EmailChoice.Font                      = 'Microsoft Sans Serif,13,style=Bold'
-$ResultsForm.controls.AddRange(@($EmailChoice))
-$VL = $VL +25}}
-
-#Cancel Button
-$cancelBtn                       = New-Object system.Windows.Forms.Button
-$cancelBtn.BackColor             = "#ffffff"
-$cancelBtn.text                  = "Close"
-$cancelBtn.width                 = 90
-$cancelBtn.height                = 30
-$cancelBtn.location              = New-Object System.Drawing.Point(220,560)
-$cancelBtn.Font                  = 'Microsoft Sans Serif,10'
-$cancelBtn.ForeColor             = "#000fff"
-$cancelBtn.DialogResult          = [System.Windows.Forms.DialogResult]::Cancel
-$ResultsForm.CancelButton   = $cancelBtn
-$ResultsForm.Controls.Add($cancelBtn)
-
-
-
-
-
-# Display the form
-[void]$ResultsForm.ShowDialog()
-}}
- #>
-
 Function ActionForm {
 Write-host "ActionForm" -fore Yellow
 Add-Type -AssemblyName System.Windows.Forms
@@ -577,7 +489,7 @@ $OperationChoice.Add_KeyDown({
     {    
 if ($OperationChoice.text -eq $NewMoveForm) {NewMoveForm}
 if ($OperationChoice.text -eq $CompleteMoveForm) {FinaliseMoveForm}
-if ($OperationChoice.text -eq $ViewMoveForm) {MoveConfirmForm}
+if ($OperationChoice.text -eq $ViewMoveForm) {MoveConfirmForm1}
 if ($OperationChoice.text -eq $RemoveMoveForm) {RemoveMoveForm}
 #if ($OperationChoice.text -eq $sub5) {Sub5}
     }
@@ -626,7 +538,7 @@ $ActionForm.Controls.Add($ExecuteBtn)
 $ExecuteBtn.Add_Click({ 
 if ($OperationChoice.text -eq $NewMoveForm) {NewMoveForm}
 if ($OperationChoice.text -eq $CompleteMoveForm) {FinaliseMoveForm}
-if ($OperationChoice.text -eq $ViewMoveForm) {MoveConfirmForm}
+if ($OperationChoice.text -eq $ViewMoveForm) {MoveConfirmForm1}
 if ($OperationChoice.text -eq $RemoveMoveForm) {CheckEmailForm}
  })
 
@@ -1092,4 +1004,7 @@ $List = Import-csv $FileBrowser.FileName
 # Init PowerShell GUI
 $scriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 $script =  $scriptPath + "\" + $MyInvocation.MyCommand.name 
+
+#Initiate GUI
+Write-Host "Office 365 Move Management GUI Initiated" -for green
 chooseForm
