@@ -9,8 +9,28 @@
 #
 #Version 0.6 2021-02-19
 #Bulk options not fully functional 
+function Add-Clock {
+ $code = { 
+    $pattern = '\d{2}:\d{2}:\d{2}'
+    do {
+      $clock = Get-Date -format 'HH:mm:ss'
 
+      $oldtitle = [system.console]::Title
+      if ($oldtitle -match $pattern) {
+        $newtitle = $oldtitle -replace $pattern, $clock
+      } else {
+        $newtitle = "$clock $oldtitle"
+      }
+      [System.Console]::Title = $newtitle
+      Start-Sleep -Seconds 1
+    } while ($true)
+  }
 
+ $ps = [PowerShell]::Create()
+ $null = $ps.AddScript($code)
+ $ps.BeginInvoke()
+}
+Add-clock
 #Check for administrative rights
 If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
     [Security.Principal.WindowsBuiltInRole] "Administrator"))
@@ -30,15 +50,20 @@ Install-Module -Name ExchangeOnlineManagement}
 Write-host "Import Exchange Online Management PS Module"
 Import-Module ExchangeOnlineManagement
 
-$CheckCon = Get-EmailAddressPolicy -erroraction silentlycontinue
-if (!$CheckCon) {Write-host "Connecting to Exchange Online - Please enter your credentials" - Fore Cyan
+$CheckCon = Get-EXOCasMailbox
+if (!$CheckCon) {Write-host "Connecting to Exchange Online - Please enter your credentials"  -BackgroundColor Blue
 Sleep -s 2
 Connect-ExchangeOnline}
-if ($CheckCon) {Write-Host "Already connected to" $CheckCon.EnabledPrimarySMTPAddressTemplate  -fore Green}
+if ($CheckCon) {Write-Host "Already connected to Exchange Online PowerShell"  -fore Green}
 $CheckCon = Get-EXOCasMailbox
-Write-host "Connected to" $CheckCon.EnabledPrimarySMTPAddressTemplate -fore Green
+Write-host "Connecting to Exchange Online PowerShell" -fore Green
 #Variables
 $check = $null
+
+If (!$credential) {
+	Write-host "- Please enter your credentials for the on premise Exchange Server"  -BackgroundColor Blue
+	$credential = get-credential}
+
 
 #Menu Options
 $NewMoveForm = 'Create New Move Requests'
@@ -54,20 +79,25 @@ $RemoveBulkMoveForm = "Remove Bulk Move Requests"
 
 ####Data Import####
 $Time= Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-Write-Host "Un-migrated mailbox data import started $Time.
-This may take some time." -fore green
+Write-Host "
+Incomplete mailbox migration data import started $Time." -fore green
+Write-host "This may take some time." -fore yellow
 $allUsers = Get-MailUser
 $Time= Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-Write-host "Mailbox Move data import started $Time"
+Write-Host "Incomplete mailbox migration data import finished $Time." -fore green
+
 $AM = $allusers | measure
-Write-host " Unmigrated Mailbox count:" $AM.count
+Write-host "Incomplete Mailbox count:" $AM.count 
+Write-host ""
+Write-host "Mailbox Move data import started $Time" -fore Green
+Write-host "This may take some time." -fore yellow
 $moves = Get-moverequest
 $Time= Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-Write-Host "Import complete at $time" -fore Cyan
+Write-Host "Import complete at $time" -fore green
 $MM = $moves | measure
 Write-host "Current move request count:" $MM.count
 
-############Form Functions Start
+############Form Functions Start #######################################
 
 Function ChooseForm {
 	Add-Type -AssemblyName System.Windows.Forms
@@ -75,7 +105,7 @@ Function ChooseForm {
 # Create a new form
 $ActionForm                    = New-Object system.Windows.Forms.Form
 # Define the size, title and background color
-$ActionForm.ClientSize         = '500,300'
+$ActionForm.ClientSize         = '500,200'
 $ActionForm.text               = "Mailbox Move Management"
 $ActionForm.BackColor          = "#ffffff"
 
@@ -88,34 +118,16 @@ $TitleOperationChoice.height                    = 10
 $TitleOperationChoice.location                  = New-Object System.Drawing.Point(20,0)
 $TitleOperationChoice.Font                      = 'Microsoft Sans Serif,13'
 
-
-
-
-#Buttons
-$ConnectEXoPSBtn                   = New-Object system.Windows.Forms.Button
-$ConnectEXoPSBtn.BackColor         = "#026075"
-$ConnectEXoPSBtn.text              = "Connect to Exchange Online"
-$ConnectEXoPSBtn.width             = 200
-$ConnectEXoPSBtn.height            = 30
-$ConnectEXoPSBtn.location          = New-Object System.Drawing.Point(20,30)
-$ConnectEXoPSBtn.Font              = 'Microsoft Sans Serif,10'
-$ConnectEXoPSBtn.ForeColor         = "#ffffff"
-$ActionForm.CancelButton   = $cancelBtn
-$ActionForm.Controls.Add($ConnectEXoPSBtn)
-$ConnectEXoPSBtn.Add_Click({Connect-ExchangeOnline})
-
-#Buttons
-$ExchOnPremCredBtn                   = New-Object system.Windows.Forms.Button
-$ExchOnPremCredBtn.BackColor         = "#026075"
-$ExchOnPremCredBtn.text              = "Exchange OnPrem Credential"
-$ExchOnPremCredBtn.width             = 200
-$ExchOnPremCredBtn.height            = 30
-$ExchOnPremCredBtn.location          = New-Object System.Drawing.Point(240,30)
-$ExchOnPremCredBtn.Font              = 'Microsoft Sans Serif,10'
-$ExchOnPremCredBtn.ForeColor         = "#ffffff"
-$ActionForm.CancelButton   = $cancelBtn
-$ActionForm.Controls.Add($ExchOnPremCredBtn)
-$ExchOnPremCredBtn.Add_Click({$credential = get-credential})
+<# #ClockCode
+$ClockText                           = New-Object system.Windows.Forms.Label
+$ClockText.text                      = Clockcode
+$ClockText.AutoSize                  = $true
+$ClockText.width                     = 25
+$ClockText.height                    = 10
+$ClockText.ForeColor					= "#32a852"
+$ClockText.location                  = New-Object System.Drawing.Point(150,0)
+$ClockText.Font                      = 'Microsoft Sans Serif,13'
+$ActionForm.controls.AddRange(@($ClockText)) #>
 
 #Buttons
 $SingleUserBtn                   = New-Object system.Windows.Forms.Button
@@ -123,7 +135,7 @@ $SingleUserBtn.BackColor         = "#32a852"
 $SingleUserBtn.text              = "Individual User Operations"
 $SingleUserBtn.width             = 200
 $SingleUserBtn.height            = 30
-$SingleUserBtn.location          = New-Object System.Drawing.Point(20,70)
+$SingleUserBtn.location          = New-Object System.Drawing.Point(20,30)
 $SingleUserBtn.Font              = 'Microsoft Sans Serif,10'
 $SingleUserBtn.ForeColor         = "#ffffff"
 $ActionForm.CancelButton   = $cancelBtn
@@ -136,7 +148,7 @@ $BulkUserBtn.BackColor         = "#32a852"
 $BulkUserBtn.text              = "Bulk Operations*"
 $BulkUserBtn.width             = 200
 $BulkUserBtn.height            = 30
-$BulkUserBtn.location          = New-Object System.Drawing.Point(240,70)
+$BulkUserBtn.location          = New-Object System.Drawing.Point(240,30)
 $BulkUserBtn.Font              = 'Microsoft Sans Serif,10'
 $BulkUserBtn.ForeColor         = "#ffffff"
 $ActionForm.CancelButton   = $cancelBtn
@@ -150,7 +162,7 @@ $NoteText.AutoSize                  = $true
 $NoteText.width                     = 25
 $NoteText.height                    = 10
 $NoteText.ForeColor					= "#32a852"
-$NoteText.location                  = New-Object System.Drawing.Point(20,150)
+$NoteText.location                  = New-Object System.Drawing.Point(20,80)
 $NoteText.Font                      = 'Microsoft Sans Serif,13'
 $ActionForm.controls.AddRange(@($NoteText))
 
@@ -160,7 +172,7 @@ $CheckMovesBtn.BackColor         = "#32a852"
 $CheckMovesBtn.text              = "Check Existing Moves"
 $CheckMovesBtn.width             = 200
 $CheckMovesBtn.height            = 30
-$CheckMovesBtn.location          = New-Object System.Drawing.Point(20,180)
+$CheckMovesBtn.location          = New-Object System.Drawing.Point(20,110)
 $CheckMovesBtn.Font              = 'Microsoft Sans Serif,10'
 $CheckMovesBtn.ForeColor         = "#ffffff"
 $ActionForm.CancelButton   = $cancelBtn
@@ -171,10 +183,10 @@ $CheckMovesBtn.Add_Click({$Moves|Select displayname,Status|Out-GridView -PassThr
 #Cancel Button
 $cancelBtn                       = New-Object system.Windows.Forms.Button
 $cancelBtn.BackColor             = "#ffffff"
-$cancelBtn.text                  = "Cancel"
+$cancelBtn.text                  = "Close"
 $cancelBtn.width                 = 90
 $cancelBtn.height                = 30
-$cancelBtn.location              = New-Object System.Drawing.Point(20,260)
+$cancelBtn.location              = New-Object System.Drawing.Point(20,150)
 $cancelBtn.Font                  = 'Microsoft Sans Serif,10'
 $cancelBtn.ForeColor             = "#000fff"
 $cancelBtn.DialogResult          = [System.Windows.Forms.DialogResult]::Cancel
@@ -202,6 +214,7 @@ $NewMoveForm.BackColor          = "#bababa"
 if ($Valid -eq 1)  { [void]$ResultForm2.Close() }
 ########### Result Form cont.
 #Account Name Heading
+
 $NewPrimaryText                           = New-Object system.Windows.Forms.Label
 $NewPrimaryText.text                      = 'You have chosen to move mailbox ' + $ID.name
 $NewPrimaryText.AutoSize                  = $true
@@ -227,7 +240,8 @@ $ExecBtn.ForeColor         = "#ffffff"
 $NewMoveForm.CancelButton   = $cancelBtn3
 $NewMoveForm.Controls.Add($ExecBtn)
 
-$ExecBtn.Add_Click({New-MoveRequest -identity $ID.name -Remote -RemoteHostName autodiscover.medikredit.co.za -RemoteCredential $credential -TargetDeliveryDomain "medikredit.co.za" -AcceptLargeDataLoss -BadItemLimit 1000 -CompleteAfter 2020-01-01})
+$ExecBtn.Add_Click({New-MoveRequest -identity $ID.name -Remote -RemoteHostName autodiscover.medikredit.co.za -RemoteCredential $credential -TargetDeliveryDomain "medikredit.co.za" -AcceptLargeDataLoss -BadItemLimit 1000 -CompleteAfter 2020-01-01 -erroraction silentlycontinue -warningaction silentlycontinue
+MoveConfirmForm})
 
 #Execute Button
 $ExecBtn1                   = New-Object system.Windows.Forms.Button
@@ -241,12 +255,13 @@ $ExecBtn1.ForeColor         = "#ffffff"
 $NewMoveForm.CancelButton   = $cancelBtn3
 $NewMoveForm.Controls.Add($ExecBtn1)
 
-$ExecBtn1.Add_Click({New-MoveRequest -identity $ID.name -Remote -RemoteHostName autodiscover.medikredit.co.za -RemoteCredential $credential -TargetDeliveryDomain "medikredit.co.za" -AcceptLargeDataLoss -BadItemLimit 1000 -CompleteAfter 9999-01-01})
+$ExecBtn1.Add_Click({New-MoveRequest -identity $ID.name -Remote -RemoteHostName autodiscover.medikredit.co.za -RemoteCredential $credential -TargetDeliveryDomain "medikredit.co.za" -AcceptLargeDataLoss -BadItemLimit 1000 -CompleteAfter 9999-01-01 -erroraction silentlycontinue -warningaction silentlycontinue
+MoveConfirmForm})
 
 #Cancel Button
 $cancelBtn3                       = New-Object system.Windows.Forms.Button
 $cancelBtn3.BackColor             = "#ffffff"
-$cancelBtn3.text                  = "Cancel"
+$cancelBtn3.text                  = "Close"
 $cancelBtn3.width                 = 90
 $cancelBtn3.height                = 30
 $cancelBtn3.location              = New-Object System.Drawing.Point(20,170)
@@ -347,7 +362,7 @@ $ExecBtn1.Add_Click({New-MoveRequest -identity $ID.name -Remote -RemoteHostName 
 #Cancel Button
 $cancelBtn3                       = New-Object system.Windows.Forms.Button
 $cancelBtn3.BackColor             = "#ffffff"
-$cancelBtn3.text                  = "Cancel"
+$cancelBtn3.text                  = "Close"
 $cancelBtn3.width                 = 90
 $cancelBtn3.height                = 30
 $cancelBtn3.location              = New-Object System.Drawing.Point(20,250)
@@ -419,13 +434,13 @@ $ExecBtn.Add_Click({
 	If (!$MC){NoMoveForm
 	Write-Host "No move associated with user"}
 	If ($MC) {set-moverequest $ID.name -completeafter 2020-01-01 -whatif
-	MoveConfirmForm1}
+	MoveConfirmForm}
 	})
 
 #Cancel Button
 $cancelBtn4                       = New-Object system.Windows.Forms.Button
 $cancelBtn4.BackColor             = "#ffffff"
-$cancelBtn4.text                  = "Cancel"
+$cancelBtn4.text                  = "Close"
 $cancelBtn4.width                 = 120
 $cancelBtn4.height                = 30
 $cancelBtn4.location              = New-Object System.Drawing.Point(20,130)
@@ -489,7 +504,7 @@ $OperationChoice.Add_KeyDown({
     {    
 if ($OperationChoice.text -eq $NewMoveForm) {NewMoveForm}
 if ($OperationChoice.text -eq $CompleteMoveForm) {FinaliseMoveForm}
-if ($OperationChoice.text -eq $ViewMoveForm) {MoveConfirmForm1}
+if ($OperationChoice.text -eq $ViewMoveForm) {MoveConfirmForm}
 if ($OperationChoice.text -eq $RemoveMoveForm) {RemoveMoveForm}
 #if ($OperationChoice.text -eq $sub5) {Sub5}
     }
@@ -538,7 +553,7 @@ $ActionForm.Controls.Add($ExecuteBtn)
 $ExecuteBtn.Add_Click({ 
 if ($OperationChoice.text -eq $NewMoveForm) {NewMoveForm}
 if ($OperationChoice.text -eq $CompleteMoveForm) {FinaliseMoveForm}
-if ($OperationChoice.text -eq $ViewMoveForm) {MoveConfirmForm1}
+if ($OperationChoice.text -eq $ViewMoveForm) {MoveConfirmForm}
 if ($OperationChoice.text -eq $RemoveMoveForm) {CheckEmailForm}
  })
 
@@ -547,7 +562,7 @@ if ($OperationChoice.text -eq $RemoveMoveForm) {CheckEmailForm}
 #Cancel Button
 $cancelBtn                       = New-Object system.Windows.Forms.Button
 $cancelBtn.BackColor             = "#ffffff"
-$cancelBtn.text                  = "Cancel"
+$cancelBtn.text                  = "Close"
 $cancelBtn.width                 = 90
 $cancelBtn.height                = 30
 $cancelBtn.location              = New-Object System.Drawing.Point(260,250)
@@ -659,7 +674,7 @@ if ($OperationChoice.text -eq $RemoveAllCompleteForm) {RemoveAllCompleteForm}
 #Cancel Button
 $cancelBtn                       = New-Object system.Windows.Forms.Button
 $cancelBtn.BackColor             = "#ffffff"
-$cancelBtn.text                  = "Cancel"
+$cancelBtn.text                  = "Close"
 $cancelBtn.width                 = 90
 $cancelBtn.height                = 30
 $cancelBtn.location              = New-Object System.Drawing.Point(260,250)
@@ -722,7 +737,7 @@ $NoMoveForm.controls.AddRange(@($NoMoveText))
 #Cancel Button
 $cancelBtn                       = New-Object system.Windows.Forms.Button
 $cancelBtn.BackColor             = "#ffffff"
-$cancelBtn.text                  = "Cancel"
+$cancelBtn.text                  = "Close"
 $cancelBtn.width                 = 90
 $cancelBtn.height                = 30
 $cancelBtn.location              = New-Object System.Drawing.Point(20,50)
@@ -740,7 +755,7 @@ function FindUserForm {
   Write-host "FindUserForm" -fore Yellow
   #Username to be used in code
   #$ID=get-adobject -filter 'cn -like $searchstring' |Out-GridView -PassThru
-  $ID=$allusers  |Out-GridView -PassThru
+  $ID=$allusers   |select name|Out-GridView -PassThru
   $CN = $ID.Name
 Write-host "ID is $ID"
   #Get user data
@@ -794,47 +809,6 @@ $MoveConfirmForm.controls.AddRange(@($MoveConfirmDetail))
 
 
 $MoveConfirmForm.ShowDialog()
-$CompleteMoveForm.close() 
-}
-
-Function MoveConfirmForm1{
-	# Move Status from FinaliseMoveForm
-	Write-host "MoveConfirmForm"
-$MoveConfirmForm1                    = New-Object system.Windows.Forms.Form
-$MoveConfirmForm1.ClientSize         = '400,100'
-$MoveConfirmForm1.text               = "Move Status"
-$MoveConfirmForm1.BackColor          = "#bababa"
-
-#Account Name Heading
-$MoveConfirmText1                           = New-Object system.Windows.Forms.Label
-$MoveConfirmText1.text                      = "Mailbox: " + $ID.name
-$MoveConfirmText1.AutoSize                  = $true
-$MoveConfirmText1.width                     = 25
-$MoveConfirmText1.height                    = 10
-#$MoveConfirmText.ForeColor                 = "#ff0000"
-$MoveConfirmText1.location                  = New-Object System.Drawing.Point(20,10)
-$MoveConfirmText1.Font                      = 'Microsoft Sans Serif,13'
-$MoveConfirmForm1.controls.AddRange(@($MoveConfirmText1))
-
-Write-host $ID
-
-$MRS = Get-moverequest $ID.name |get-moverequestStatistics
-$MRT = $MRS |select DisplayName,StatusDetail,PercentComplete
-
-$MoveConfirmDetail1                           = New-Object system.Windows.Forms.Label
-$MoveConfirmDetail1.text                      = "Status: " + $MRT.StatusDetail.Value + ", "  + $MRT.PercentComplete + "% Complete"
-$MoveConfirmDetail1.AutoSize                  = $true
-$MoveConfirmDetail1.width                     = 300
-$MoveConfirmDetail1.height                    = 10
-#$MoveConfirmDetail1.ForeColor                 = "#ff0000"
-$MoveConfirmDetail1.location                  = New-Object System.Drawing.Point(20,40)
-$MoveConfirmDetail1.Font                      = 'Microsoft Sans Serif,13'
-$MoveConfirmForm1.controls.AddRange(@($MoveConfirmDetail1))
-
-
-
-$MoveConfirmForm1.ShowDialog()
-$CompleteMoveForm.close() 
 }
 
 Function RemoveMoveForm {
@@ -891,13 +865,13 @@ $ExecBtn.Add_Click({
 	If (!$MC){NoMoveForm
 	Write-Host "No move associated with user"}
 	If ($MC) {Remove-moverequest $ID.name -confirm $False -whatif
-	MoveConfirmForm1}
+	MoveConfirmForm}
 	})
 
 #Cancel Button
 $cancelBtn4                       = New-Object system.Windows.Forms.Button
 $cancelBtn4.BackColor             = "#ffffff"
-$cancelBtn4.text                  = "Cancel"
+$cancelBtn4.text                  = "Close"
 $cancelBtn4.width                 = 120
 $cancelBtn4.height                = 30
 $cancelBtn4.location              = New-Object System.Drawing.Point(20,130)
@@ -974,7 +948,7 @@ $ExecBtn.Add_Click({
 #Cancel Button
 $cancelBtn4                       = New-Object system.Windows.Forms.Button
 $cancelBtn4.BackColor             = "#ffffff"
-$cancelBtn4.text                  = "Cancel"
+$cancelBtn4.text                  = "Close"
 $cancelBtn4.width                 = 120
 $cancelBtn4.height                = 30
 $cancelBtn4.location              = New-Object System.Drawing.Point(20,130)
@@ -998,6 +972,13 @@ $null = $FileBrowser.ShowDialog()
 $List = Import-csv $FileBrowser.FileName	
 
 }
+
+Function ClockCode {
+	do {
+      $clock = Get-Date -format 'HH:mm:ss'
+      $clock
+      Start-Sleep -Seconds 1
+    } while ($true)}
 
 ############Form Functions End
 
