@@ -778,7 +778,7 @@ Function MoveConfirmForm{
 	# Ivalid User Form
 	Write-host "MoveConfirmForm"
 $MoveConfirmForm                    = New-Object system.Windows.Forms.Form
-$MoveConfirmForm.ClientSize         = '400,100'
+$MoveConfirmForm.ClientSize         = '500,100'
 $MoveConfirmForm.text               = "Move Status"
 $MoveConfirmForm.BackColor          = "#bababa"
 
