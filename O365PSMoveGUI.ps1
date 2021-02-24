@@ -31,14 +31,16 @@ function Add-Clock {
  $ps.BeginInvoke()
 }
 Add-clock
+
 #Check for administrative rights
-If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
+<# If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
     [Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
     Write-Warning "You do not have Administrator rights to run this script!`nPlease re-run this script in a PowerShell Session as Administrator!"
     Break
-}
+} #>
 
+$Dom = "medikredit.co.za"
 
 Write-host "Checking if Exchange Online Management PS Module is installed" -Fore Cyan
 $PSM = Get-InstalledModule -Name ExchangeOnlineManagement
@@ -240,7 +242,7 @@ $ExecBtn.ForeColor         = "#ffffff"
 $NewMoveForm.CancelButton   = $cancelBtn3
 $NewMoveForm.Controls.Add($ExecBtn)
 
-$ExecBtn.Add_Click({New-MoveRequest -identity $ID.name -Remote -RemoteHostName autodiscover.medikredit.co.za -RemoteCredential $credential -TargetDeliveryDomain "medikredit.co.za" -AcceptLargeDataLoss -BadItemLimit 1000 -CompleteAfter 2020-01-01 -erroraction silentlycontinue -warningaction silentlycontinue
+$ExecBtn.Add_Click({New-MoveRequest -identity $ID.name -Remote -RemoteHostName autodiscover.medikredit.co.za -RemoteCredential $credential -TargetDeliveryDomain $Dom -AcceptLargeDataLoss -BadItemLimit 1000 -CompleteAfter 2020-01-01 -erroraction silentlycontinue -warningaction silentlycontinue
 MoveConfirmForm})
 
 #Execute Button
@@ -433,7 +435,7 @@ $ExecBtn.Add_Click({
 	Write-Host "Value: $MC"
 	If (!$MC){NoMoveForm
 	Write-Host "No move associated with user"}
-	If ($MC) {set-moverequest $ID.name -completeafter 2020-01-01 -whatif
+	If ($MC) {set-moverequest $ID.name -completeafter 2020-01-01
 	MoveConfirmForm}
 	})
 
@@ -864,7 +866,7 @@ $ExecBtn.Add_Click({
 	Write-Host "Value: $MC"
 	If (!$MC){NoMoveForm
 	Write-Host "No move associated with user"}
-	If ($MC) {Remove-moverequest $ID.name -confirm $False -whatif
+	If ($MC) {Remove-moverequest $ID.name -confirm $False 
 	MoveConfirmForm}
 	})
 
@@ -939,7 +941,7 @@ $ExecBtn.Add_Click({
 	Write-Host "Value: $MC"
 	If (!$MC){NoMoveForm
 	Write-Host "No move associated with user"}
-	If ($MC) {$Moves |where {$_.Status -eq "Completed"} |Remove-moverequest -confirm $False -whatif
+	If ($MC) {$Moves |where {$_.Status -eq "Completed"} |Remove-moverequest -confirm $False -
 	#MoveConfirmForm2
 	#$moves = Get-moverequest
 	}
